@@ -1,8 +1,35 @@
+import { ApolloClient, gql, InMemoryCache } from '@apollo/client'
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.scss'
 import { Deck as DeckComponent} from './../components/deck'
 import { Deck as DeckLibrary } from './../lib/deck'
+
+const {
+  GRAPHQL_SERVER
+} = process.env
+
+const client = new ApolloClient({
+  uri: GRAPHQL_SERVER,
+  cache: new InMemoryCache()
+})
+
+const tableQuery = gql`
+  query {
+    table{
+      number
+      symbol
+    }
+  }
+`
+const getCardsQuery =gql`
+  query getCards($cards : Int){
+    getCards(cards: $cards){
+      number
+      symbol
+    }
+  }
+`
 
 export default function Home(props) {
   return (<>
@@ -31,45 +58,51 @@ export async function getServerSideProps(context){
   // const table = deck.dispatchCards(5)
   // const hand = deck.dispatchCards(2)
 
-  const { data } = await (await fetch('http://localhost:4000', {
-    method: 'POST',
-    headers: {
-      'Content-Type' : 'application/json'
-    },
-    body: JSON.stringify({
-      query:`
-        query {
-          table{
-            number
-            symbol
-          }
-        }`})
-  })).json()
+  // const { data } = await (await fetch('http://localhost:4000', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type' : 'application/json'
+  //   },
+  //   body: JSON.stringify({
+  //     query:`
+  //       query {
+  //         table{
+  //           number
+  //           symbol
+  //         }
+  //       }`})
+  // })).json()
 
-  const handData = await (await fetch('http://localhost:4000', {
-    method: 'POST',
-    headers: {
-      'Content-Type' : 'application/json'
-    },
-    body: JSON.stringify({
-      query:`
-        query getCards($cards : Int){
-          getCards(cards: $cards){
-            number
-            symbol
-          }
-        }
-      `,
-      variables: {
-        cards: 2
-      }
-    })
-  })).json()
+  // const handData = await (await fetch('http://localhost:4000', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type' : 'application/json'
+  //   },
+  //   body: JSON.stringify({
+  //     query:`
+  //       query getCards($cards : Int){
+  //         getCards(cards: $cards){
+  //           number
+  //           symbol
+  //         }
+  //       }
+  //     `,
+  //     variables: {
+  //       cards: 2
+  //     }
+  //   })
+  // })).json()
 
+  const tableData = await client.query({query : tableQuery})
+  const handData = await client.query({
+    query : getCardsQuery, 
+    variables : {cards : 2}, 
+    fetchPolicy: 'no-cache'
+  })
   return {
     props: {
       title: 'Cards.js',
-      table: data.table, 
+      table: tableData.data.table, 
       hand: handData.data.getCards
     }
   }
